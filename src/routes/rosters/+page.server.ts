@@ -9,29 +9,22 @@ import {
 
 export async function load() {
   try {
-    // Load core league and roster data
-    const [leagueData, rosterData, leagueTeamManagers, playersInfo] = await Promise.all([
+    const [leagueData, rosterResponse, leagueTeamManagers, playersInfo] = await Promise.all([
       getLeagueData(),
       getLeagueRosters(),
       getLeagueTeamManagers(),
       loadPlayers()
     ]);
 
-    // Enrich players with keeper metadata
+    const rosters = rosterResponse.rosters;
+    const startersAndReserve = rosterResponse.startersAndReserve;
+
     const playerMeta = await buildPlayerMeta();
 
-    for (const roster of rosterData) {
-      for (const playerID of roster.players || []) {
-        const meta = playerMeta[playerID] ?? {};
-        roster.playersMeta = roster.playersMeta || {};
-        roster.playersMeta[playerID] = {
-          eligibleKeeper: meta.eligibleKeeper ?? false,
-          keeperRoundNextYear: meta.keeperRoundNextYear ?? 'X',
-          yearsOnSameRoster: meta.yearsOnSameRoster ?? 1
-        };
-      }
+    for (const roster of rosters) {
+      const allPlayers = [...(roster.players ?? []), ...(roster.reserve ?? [])];
 
-      for (const playerID of roster.reserve || []) {
+      for (const playerID of allPlayers) {
         const meta = playerMeta[playerID] ?? {};
         roster.playersMeta = roster.playersMeta || {};
         roster.playersMeta[playerID] = {
@@ -45,7 +38,7 @@ export async function load() {
     return {
       rostersInfo: {
         leagueData,
-        rosterData: { rosters: rosterData, startersAndReserve: leagueData.roster_positions },
+        rosterData: { rosters, startersAndReserve },
         leagueTeamManagers,
         playersInfo
       }
