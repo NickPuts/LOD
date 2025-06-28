@@ -1,35 +1,18 @@
 <script>
-	import LinearProgress from '@smui/linear-progress';
-	import { Roster } from '$lib/Rosters/Roster.svelte'
-	export let data;
-	const rostersInfo = data.rostersInfo;
+  import LinearProgress from '@smui/linear-progress';
+  import Rosters from '$lib/Rosters/rosters.svelte'; // ✅ this must be lowercase if the file is lowercase
+
+  export let data;
+  const rostersInfo = data.rostersInfo;
 </script>
 
-<style>
-	.holder {
-		position: relative;
-		z-index: 1;
-	}
-	.loading {
-		display: block;
-		width: 85%;
-		max-width: 500px;
-		margin: 80px auto;
-	}
-</style>
-
-<div class="holder">
-	{#await rostersInfo}
-		<div class="loading">
-			<p>Retrieving roster data...</p>
-			<br />
-			<LinearProgress indeterminate />
-		</div>
-	{:then [leagueData, rosterData, leagueTeamManagers, playersInfo]}
-		<!-- promise was fulfilled -->
-		<Rosters {leagueData} {rosterData} {leagueTeamManagers} {playersInfo} /> <!-- displays rosters -->
-	{:catch error}
-		<!-- promise was rejected -->
-		<p>Something went wrong: {error.message}</p>
-	{/await}
-</div>
+{#if !rostersInfo}
+  <LinearProgress indeterminate />
+{:else}
+  <Rosters
+    leagueData={rostersInfo.leagueData}
+    rosterData={rostersInfo.rosterData}
+    leagueTeamManagers={rostersInfo.leagueTeamManagers}
+    playersInfo={rostersInfo.playersInfo}
+  />
+{/if}
