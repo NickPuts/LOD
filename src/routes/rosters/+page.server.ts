@@ -6,7 +6,7 @@ import {
   getRosters,
   getManagers,
   getAllPlayers
-} from '$lib/YOUR-SOURCE-FILE'; // Replace with correct path
+} from '$lib/PowerRankings/sleeper'; // Replace with correct path
 
 export async function load() {
   const [leagueData, rosterData, leagueTeamManagers, playersInfo] = await Promise.all([
