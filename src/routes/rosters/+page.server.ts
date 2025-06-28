@@ -1,19 +1,18 @@
 import { buildPlayerMeta } from '$lib/PowerRankings/sleeper';
-
-// Use your actual working functions here:
 import {
   getLeagueData,
-  getRosters,
-  getManagers,
-  getAllPlayers
-} from '$lib/PowerRankings/sleeper'; // Replace with correct path
+  getLeagueRosters,
+  getLeagueTeamManagers,
+  loadPlayers,
+  waitForAll
+} from '$lib/utils/helper';
 
 export async function load() {
   const [leagueData, rosterData, leagueTeamManagers, playersInfo] = await Promise.all([
     getLeagueData(),
-    getRosters(),
-    getManagers(),
-    getAllPlayers()
+    getLeagueRosters(),
+    getLeagueTeamManagers(),
+    loadPlayers()
   ]);
 
   const playerMeta = await buildPlayerMeta();
