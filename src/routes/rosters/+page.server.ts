@@ -3,8 +3,7 @@ import {
   getLeagueData,
   getLeagueRosters,
   getLeagueTeamManagers,
-  loadPlayers,
-  waitForAll
+  loadPlayers
 } from '$lib/utils/helper';
 
 export async function load() {
@@ -17,27 +16,31 @@ export async function load() {
 
   const playerMeta = await buildPlayerMeta();
 
-  for (const roster of rosterData) {
-    for (const player of roster.players) {
-      const meta = playerMeta[player.id];
-      if (meta) {
-        player.eligibleKeeper = meta.eligibleKeeper;
-        player.keeperRoundNextYear = meta.keeperRoundNextYear;
-        player.yearsOnSameRoster = meta.yearsOnSameRoster;
-      } else {
-        player.eligibleKeeper = false;
-        player.keeperRoundNextYear = 'X';
-        player.yearsOnSameRoster = 1;
+  // Inject keeper metadata into each player in each roster
+  for (const roster of rosterData.rosters) {
+    for (const section of ['starters', 'players', 'reserve']) {
+      const players = roster[section];
+      if (!players) continue;
+
+      roster.playersMeta = roster.playersMeta || {};
+
+      for (const playerId of players) {
+        const meta = playerMeta[playerId];
+        roster.playersMeta[playerId] = {
+          eligibleKeeper: meta?.eligibleKeeper ?? false,
+          keeperRoundNextYear: meta?.keeperRoundNextYear ?? 'X',
+          yearsOnSameRoster: meta?.yearsOnSameRoster ?? 1
+        };
       }
     }
   }
 
   return {
-    rostersInfo: Promise.resolve([
+    rostersInfo: {
       leagueData,
       rosterData,
       leagueTeamManagers,
       playersInfo
-    ])
+    }
   };
 }
