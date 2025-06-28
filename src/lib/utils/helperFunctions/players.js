@@ -1,59 +1,52 @@
 import { get } from 'svelte/store';
-import {players} from '$lib/stores';
+import { players } from '$lib/stores';
 import { browser } from '$app/environment';
 
-export const loadPlayers = async (servFetch, refresh = false) => {     
-	if(get(players)[1426]) {
+export const loadPlayers = async (servFetch, refresh = false) => {
+	if (get(players)[1426]) {
 		return {
-            players: get(players),
-            stale: false
-        };
+			players: get(players),
+			stale: false
+		};
 	}
 
-    const smartFetch = servFetch ?? fetch;
-    
-    const now = Math.round(new Date().getTime() / 1000);
-    let playersInfo = null;
-    let expiration = null;
-    if(browser) {
-        playersInfo = JSON.parse(localStorage.getItem("playersInfo"));
-        expiration = parseInt(localStorage.getItem("expiration"));
-    }
+	const now = Math.floor(Date.now() / 1000);
+	let playersInfo = null;
+	let expiration = null;
 
-    if(playersInfo && playersInfo[1426] && expiration && now > expiration && !refresh) {
-        return {
-            players: playersInfo,
-            stale: true
-        }
-    }
-    
-    if(!playersInfo || !expiration || now > expiration) {
-        const res = await smartFetch(`/api/fetch_players_info`, {compress: true});
-        const data = await res.json();
+	if (browser) {
+		playersInfo = JSON.parse(localStorage.getItem('playersInfo'));
+		expiration = parseInt(localStorage.getItem('expiration'));
+	}
 
-        if (!res.ok) {
-            throw new Error(data);
-        }
+	if (playersInfo && playersInfo[1426] && expiration && now < expiration && !refresh) {
+		players.update(() => playersInfo);
+		return {
+			players: playersInfo,
+			stale: false
+		};
+	}
 
-        if(browser) {
-            localStorage.setItem("playersInfo", JSON.stringify(data))
+	const url = browser
+		? '/api/fetch_players_info' // relative for client
+		: 'https://lod-rho.vercel.app/api/fetch_players_info'; // absolute for server
 
-            const ts = Math.round(new Date().getTime() / 1000);
-            const newExpiration = ts + (24 * 3600);
+	const res = await (servFetch ?? fetch)(refresh ? `${url}?forceRefresh=true` : url);
 
-            localStorage.setItem("expiration", newExpiration)  
+	if (!res.ok) {
+		throw new Error('Failed to fetch player data');
+	}
 
-            players.update(() => data);
-        }
+	const data = await res.json();
 
-        return {
-            players: data,
-            stale: false
-        };
-    }
-    players.update(() => playersInfo);
-    return {
-        players: playersInfo,
-        stale: false
-    };
-}
+	if (browser) {
+		localStorage.setItem('playersInfo', JSON.stringify(data));
+		localStorage.setItem('expiration', now + 24 * 60 * 60); // 24 hrs
+	}
+
+	players.update(() => data);
+	return {
+		players: data,
+		stale: refresh
+	};
+};
