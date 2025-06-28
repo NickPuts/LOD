@@ -1,3 +1,4 @@
+import { error } from '@sveltejs/kit';
 import { buildPlayerMeta } from '$lib/PowerRankings/sleeper';
 import {
   getLeagueData,
@@ -7,36 +8,44 @@ import {
 } from '$lib/utils/helper';
 
 export async function load() {
-  const [leagueData, rosterData, leagueTeamManagers, playersInfo] = await Promise.all([
-    getLeagueData(),
-    getLeagueRosters(),
-    getLeagueTeamManagers(),
-    loadPlayers()
-  ]);
+  try {
+    const [leagueData, rosterData, leagueTeamManagers, playersInfo] = await Promise.all([
+      getLeagueData(),
+      getLeagueRosters(),
+      getLeagueTeamManagers(),
+      loadPlayers()
+    ]);
 
-  const playerMeta = await buildPlayerMeta();
+    if (!rosterData || typeof rosterData.rosters !== 'object') {
+      throw new Error('Invalid rosterData format');
+    }
 
-  for (const roster of Object.values(rosterData.rosters)) {
-    for (const player of roster.players) {
-      const meta = playerMeta[player.id];
-      if (meta) {
-        player.eligibleKeeper = meta.eligibleKeeper;
-        player.keeperRoundNextYear = meta.keeperRoundNextYear;
-        player.yearsOnSameRoster = meta.yearsOnSameRoster;
-      } else {
-        player.eligibleKeeper = false;
-        player.keeperRoundNextYear = 'X';
-        player.yearsOnSameRoster = 1;
+    const playerMeta = await buildPlayerMeta();
+
+    for (const roster of Object.values(rosterData.rosters)) {
+      const playerIDs = roster.players ?? [];
+      roster.playersMeta = {};
+
+      for (const playerId of playerIDs) {
+        const meta = playerMeta[playerId] ?? {};
+        roster.playersMeta[playerId] = {
+          eligibleKeeper: meta.eligibleKeeper ?? false,
+          keeperRoundNextYear: meta.keeperRoundNextYear ?? 'X',
+          yearsOnSameRoster: meta.yearsOnSameRoster ?? 1
+        };
       }
     }
-  }
 
-  return {
-    rostersInfo: {
-      leagueData,
-      rosterData,
-      leagueTeamManagers,
-      playersInfo
-    }
-  };
+    return {
+      rostersInfo: {
+        leagueData,
+        rosterData,
+        leagueTeamManagers,
+        playersInfo
+      }
+    };
+  } catch (err) {
+    console.error('Failed to load rosters:', err);
+    throw error(500, err.message);
+  }
 }
