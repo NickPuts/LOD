@@ -1,35 +1,23 @@
-<script lang="ts">
-  export let leagueData;
-  export let rosterData;
+<script>
+  import { gotoManager } from '$lib/utils/helper';
+  import DataTable, { Head, Body, Row, Cell } from '@smui/data-table';
+  import { Icon } from '@smui/icon-button';
+  import RosterRow from './RosterRow.svelte';
+
+  export let roster;
   export let leagueTeamManagers;
-  export let playersInfo;
-</script>
+  export let startersAndReserve;
+  export let players;
+  export let rosterPositions;
+  export let division;
+  export let expanded;
 
-{#each rosterData as roster}
-  <section style="margin-bottom: 2rem;">
-    <h2>
-      Team: {leagueTeamManagers[roster.owner_id]?.manager || 'Unknown'}
-    </h2>
+  $: team = leagueTeamManagers.teamManagersMap[leagueTeamManagers.currentSeason][roster.roster_id].team;
 
-    <table>
-      <thead>
-        <tr>
-          <th>Player</th>
-          <th>Keeper Round</th>
-          <th>Eligible</th>
-          <th>Years on Roster</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each roster.players as player}
-          <tr>
-            <td>{player.full_name ?? player.name}</td>
-            <td>{player.keeperRoundNextYear ?? 'X'}</td>
-            <td>{player.eligibleKeeper ? '✅' : '❌'}</td>
-            <td>{player.yearsOnSameRoster ?? 1}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </section>
-{/each}
+  let i = 0;
+
+  const digestData = (passedPlayers, rawPlayers, startingPlayers = false, reserve = false) => {
+    let digestedRoster = [];
+
+    for (const singlePlayer of rawPlayers) {
+      if (!startingPlayers && !reserve && startersAndReserve.includes
