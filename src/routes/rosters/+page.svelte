@@ -1,6 +1,6 @@
 <script>
   import LinearProgress from '@smui/linear-progress';
-  import Rosters from '$lib/Rosters/rosters.svelte'; // ✅ this must be lowercase if the file is lowercase
+  import Rosters from '$lib/Rosters/rosters.svelte'; // Ensure filename is lowercase
 
   export let data;
   const rostersInfo = data.rostersInfo;
