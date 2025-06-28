@@ -1,3 +1,4 @@
+import { error } from '@sveltejs/kit';
 import { buildPlayerMeta } from '$lib/PowerRankings/sleeper';
 import {
   getLeagueData,
@@ -7,40 +8,51 @@ import {
 } from '$lib/utils/helper';
 
 export async function load() {
-  const [leagueData, rosterData, leagueTeamManagers, playersInfo] = await Promise.all([
-    getLeagueData(),
-    getLeagueRosters(),
-    getLeagueTeamManagers(),
-    loadPlayers()
-  ]);
+  try {
+    // Load core league and roster data
+    const [leagueData, rosterData, leagueTeamManagers, playersInfo] = await Promise.all([
+      getLeagueData(),
+      getLeagueRosters(),
+      getLeagueTeamManagers(),
+      loadPlayers()
+    ]);
 
-  const playerMeta = await buildPlayerMeta();
+    // Enrich players with keeper metadata
+    const playerMeta = await buildPlayerMeta();
 
-  // Inject keeper metadata into each player in each roster
-  for (const roster of rosterData.rosters) {
-    for (const section of ['starters', 'players', 'reserve']) {
-      const players = roster[section];
-      if (!players) continue;
+    for (const roster of rosterData) {
+      for (const playerID of roster.players || []) {
+        const meta = playerMeta[playerID] ?? {};
+        roster.playersMeta = roster.playersMeta || {};
+        roster.playersMeta[playerID] = {
+          eligibleKeeper: meta.eligibleKeeper ?? false,
+          keeperRoundNextYear: meta.keeperRoundNextYear ?? 'X',
+          yearsOnSameRoster: meta.yearsOnSameRoster ?? 1
+        };
+      }
 
-      roster.playersMeta = roster.playersMeta || {};
-
-      for (const playerId of players) {
-        const meta = playerMeta[playerId];
-        roster.playersMeta[playerId] = {
-          eligibleKeeper: meta?.eligibleKeeper ?? false,
-          keeperRoundNextYear: meta?.keeperRoundNextYear ?? 'X',
-          yearsOnSameRoster: meta?.yearsOnSameRoster ?? 1
+      for (const playerID of roster.reserve || []) {
+        const meta = playerMeta[playerID] ?? {};
+        roster.playersMeta = roster.playersMeta || {};
+        roster.playersMeta[playerID] = {
+          eligibleKeeper: meta.eligibleKeeper ?? false,
+          keeperRoundNextYear: meta.keeperRoundNextYear ?? 'X',
+          yearsOnSameRoster: meta.yearsOnSameRoster ?? 1
         };
       }
     }
-  }
 
-  return {
-    rostersInfo: {
-      leagueData,
-      rosterData,
-      leagueTeamManagers,
-      playersInfo
-    }
-  };
+    return {
+      rostersInfo: {
+        leagueData,
+        rosterData: { rosters: rosterData, startersAndReserve: leagueData.roster_positions },
+        leagueTeamManagers,
+        playersInfo
+      }
+    };
+
+  } catch (err) {
+    console.error('❌ Error in /rosters/+page.server.ts:', err);
+    throw error(500, `Failed to load rosters: ${err.message}`);
+  }
 }
