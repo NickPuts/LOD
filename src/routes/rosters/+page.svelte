@@ -1,4 +1,14 @@
 <script>
+<script>
+  import LinearProgress from '@smui/linear-progress';
+  import Rosters from '$lib/Rosters/rosters.svelte';
+
+  export let data;
+  const rostersInfo = data.rostersInfo;
+
+  console.log("Rosters page loaded:", rostersInfo); // 👈 ADD THIS
+</script>
+
   import LinearProgress from '@smui/linear-progress';
   import Rosters from '$lib/Rosters/rosters.svelte';
 
