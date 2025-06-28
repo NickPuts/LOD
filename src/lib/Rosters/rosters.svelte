@@ -1,6 +1,6 @@
 <script>
-  import { loadPlayers } from '$lib/utils/helper';
   import RosterSorter from './RosterSorter.svelte';
+  import { loadPlayers } from '$lib/utils/helper';
 
   export let leagueData;
   export let rosterData;
@@ -8,12 +8,6 @@
   export let playersInfo;
 
   let players = playersInfo.players;
-
-  // ✅ Add logging
-  console.log('🏈 leagueData:', leagueData);
-  console.log('🏈 rosterData:', rosterData);
-  console.log('🏈 leagueTeamManagers:', leagueTeamManagers);
-  console.log('🏈 playersInfo:', playersInfo);
 
   const refreshPlayers = async () => {
     const newPlayersInfo = await loadPlayers(null, true);
@@ -25,8 +19,8 @@
   }
 </script>
 
-{#if !leagueData || !rosterData || !leagueTeamManagers || !players}
-  <p>No rosters to display</p>
+{#if !rosterData?.rosters || Object.keys(rosterData.rosters).length === 0}
+  <p style="text-align: center;">🚨 No rosters to display.</p>
 {:else}
   <div class="rosters">
     <RosterSorter
@@ -38,10 +32,3 @@
     />
   </div>
 {/if}
-
-<style>
-  .rosters {
-    position: relative;
-    z-index: 1;
-  }
-</style>
